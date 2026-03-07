@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PN YAHARI & NAWAWI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; overflow: hidden; background-color: #f8fafc; text-transform: uppercase; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .transition-soft { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .table-container { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; }
+        table { width: auto; font-size: 9px; border-collapse: collapse; table-layout: fixed; } 
+        th, td { padding: 6px 8px !important; border: 1px solid #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 80px; }
+        th { background: #f1f5f9; color: #64748b; font-size: 8px !important; text-align: center; }
+        .sticky-col { position: sticky; left: 0; background: white; z-index: 10; border-right: 2px solid #cbd5e1; width: 140px !important; text-align: left; }
+        .bg-avg { background-color: #f0fdf4; font-weight: 800; color: #15803d; width: 50px; }
+        .col-action { width: 60px; text-align: center; }
+        #sidebarOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 40; display: none; backdrop-blur: 2px; }
+    </style>
+</head>
+<body class="text-slate-900">
+
+    <div id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <div id="sidebar" class="fixed inset-y-0 left-0 w-56 bg-slate-900 text-white z-50 transition-soft -translate-x-full shadow-2xl overflow-y-auto no-scrollbar">
+        <div class="p-4 border-b border-slate-800 text-center">
+            <p class="text-[8px] text-green-500 font-bold tracking-[0.2em]">DASHBOARD</p>
+            <p class="text-[10px] font-bold leading-tight mt-1">PAGAR NUSA<br>YAHARI & NAWAWI</p>
+        </div>
+        <nav class="p-2 space-y-1">
+            <a href="#" onclick="handleMenuClick('DASHBOARD')" class="flex items-center gap-2 p-2.5 rounded-lg hover:bg-slate-800 text-slate-400 text-[10px]">🏠 HOME</a>
+            
+            <button onclick="toggleSub('subDB')" class="w-full flex items-center justify-between p-2.5 rounded-lg hover:bg-slate-800 text-slate-400 text-[10px]">
+                <span>📁 DATABASE</span><span class="text-[8px]">▼</span>
+            </button>
+            <div id="subDB" class="hidden flex flex-col ml-3 border-l border-slate-700 text-[9px]">
+                <a href="#" onclick="handleMenuClick('ANGGOTA')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• DATA ANGGOTA</a>
+                <a href="#" onclick="handleMenuClick('FISIK')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• NILAI FISIK</a>
+                <a href="#" onclick="handleMenuClick('SENI')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• NILAI SENI</a>
+                <a href="#" onclick="handleMenuClick('TEKNIK')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• NILAI TEKNIK</a>
+            </div>
+
+            <button onclick="toggleSub('subADM')" class="w-full flex items-center justify-between p-2.5 rounded-lg hover:bg-slate-800 text-slate-400 text-[10px]">
+                <span>📑 ADMINISTRASI</span><span class="text-[8px]">▼</span>
+            </button>
+            <div id="subADM" class="hidden flex flex-col ml-3 border-l border-slate-700 text-[9px]">
+                <a href="#" onclick="handleMenuClick('ABSENSI')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• ABSENSI</a>
+                <a href="#" onclick="handleMenuClick('S_MASUK')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• SURAT MASUK</a>
+                <a href="#" onclick="handleMenuClick('S_KELUAR')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• SURAT KELUAR</a>
+            </div>
+
+            <button onclick="toggleSub('subKEU')" class="w-full flex items-center justify-between p-2.5 rounded-lg hover:bg-slate-800 text-slate-400 text-[10px]">
+                <span>💰 KEUANGAN</span><span class="text-[8px]">▼</span>
+            </button>
+            <div id="subKEU" class="hidden flex flex-col ml-3 border-l border-slate-700 text-[9px]">
+                <a href="#" onclick="handleMenuClick('KAS')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• KAS</a>
+            </div>
+        </nav>
+    </div>
+
+    <div class="flex flex-col h-screen w-full relative">
+        <header class="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+            <button onclick="toggleSidebar()" class="w-9 h-9 flex items-center justify-center bg-gray-50 rounded-xl font-bold">≡</button>
+            <h1 class="text-[9px] font-bold text-green-700 tracking-widest text-center uppercase">PAGAR NUSA YAHARI & NAWAWI</h1>
+            <div class="w-8 h-8"></div>
+        </header>
+
+        <main class="flex-1 overflow-hidden flex flex-col px-4 py-4">
+            <div id="mainDashboardView" class="grid grid-cols-1 gap-4 overflow-y-auto no-scrollbar">
+                <div class="bg-gradient-to-br from-green-700 to-green-900 p-6 rounded-[28px] text-white shadow-xl">
+                    <p class="text-[9px] font-bold opacity-70 tracking-widest uppercase">Total Anggota</p>
+                    <p class="text-4xl font-bold mt-1" id="dashTotalAnggota">0</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white p-5 rounded-[24px] shadow-sm border border-gray-50 text-center">
+                        <p class="text-[8px] font-bold text-gray-400 uppercase">Total Surat</p>
+                        <p class="text-xl font-bold mt-1" id="dashTotalSurat">0</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-[24px] shadow-sm border border-gray-50 text-center">
+                        <p class="text-[8px] font-bold text-gray-400 uppercase">Saldo Kas</p>
+                        <p class="text-[11px] font-bold text-green-600 mt-1 uppercase" id="dashTotalKas">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tableView" class="hidden flex-1 overflow-hidden flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm">
+                <div class="p-3 border-b border-gray-50 bg-white space-y-3">
+                    <div class="flex justify-between items-center gap-2">
+                        <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="CARI..." class="flex-1 bg-gray-50 border-none rounded-lg px-3 py-2 text-[10px] outline-none">
+                        <button onclick="openModal()" class="bg-green-700 text-white px-4 py-2 rounded-lg text-[9px] font-bold">+ TAMBAH</button>
+                    </div>
+                    <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                        <button onclick="exportToExcel()" class="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-md text-[8px] font-bold">EXCEL</button>
+                        <button onclick="exportToWord()" class="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-md text-[8px] font-bold">WORD</button>
+                        <button onclick="exportToPDF()" class="bg-red-50 text-red-700 px-3 py-1.5 rounded-md text-[8px] font-bold">PDF</button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-hidden">
+                    <div class="table-container h-full overflow-auto no-scrollbar">
+                        <table id="targetTable">
+                            <thead class="sticky top-0 z-10" id="tableHeader"></thead>
+                            <tbody id="mainTableBody" class="divide-y divide-gray-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="modalOverlay" onclick="closeModal()" class="fixed inset-0 bg-slate-900/40 z-[60] hidden backdrop-blur-[2px]"></div>
+    <div id="inputModal" class="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[70] transform translate-y-full transition-soft shadow-2xl p-6 overflow-y-auto max-h-[90vh] no-scrollbar">
+        <form id="dynamicForm" class="space-y-4">
+            <input type="hidden" id="editKey" value="">
+            
+            <div id="baseIdentity">
+                <label class="text-[8px] font-bold text-gray-400 uppercase">Nama Lengkap</label>
+                <input id="inputName" type="text" class="w-full bg-gray-50 border-none rounded-xl p-3 text-[11px] outline-none mt-1">
+            </div>
+
+            <div id="fieldsABSENSI" class="hidden space-y-3">
+                <select id="a_jk" class="w-full bg-gray-50 rounded-xl p-3 text-[11px] outline-none"><option value="PUTRA">PUTRA</option><option value="PUTRI">PUTRI</option></select>
+                <input id="a_kelas" type="text" placeholder="KELAS" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="a_tgl" type="date" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+                <select id="a_hadir" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl"><option value="HADIR">HADIR</option><option value="IZIN">IZIN</option><option value="SAKIT">SAKIT</option><option value="ALFA">ALFA</option></select>
+                <input id="a_materi" type="text" placeholder="MATERI LATIHAN" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="a_pembina" type="text" placeholder="PEMBINA" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+            </div>
+
+            <div id="fieldsANGGOTA" class="hidden space-y-3">
+                <select id="inputJK" class="w-full bg-gray-50 rounded-xl p-3 text-[11px] outline-none"><option value="PUTRA">PUTRA</option><option value="PUTRI">PUTRI</option></select>
+                <input id="inputTglLahir" type="date" onchange="hitungUsia()" class="w-full bg-gray-50 rounded-xl p-3 text-[11px] outline-none">
+                <input id="inputUsia" type="text" readonly class="w-full bg-green-50 text-green-700 font-bold p-3 text-[11px] rounded-xl" placeholder="KUALIFIKASI">
+            </div>
+
+            <div id="fieldsFISIK" class="hidden grid grid-cols-2 gap-2">
+                <input id="f_v1" type="number" placeholder="SPR" class="bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="f_v2" type="number" placeholder="P-U" class="bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="f_v3" type="number" placeholder="S-U" class="bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="f_v4" type="number" placeholder="B-U" class="bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="f_v5" type="number" placeholder="S-J" class="col-span-2 bg-gray-50 p-3 text-[11px] rounded-xl">
+            </div>
+
+            <div id="fieldsSENI" class="hidden space-y-2">
+                <input id="s_v1" type="number" placeholder="BAKU" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="s_v2" type="number" placeholder="IPSI" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+            </div>
+
+            <div id="fieldsTEKNIK" class="hidden grid grid-cols-2 gap-2">
+                <input id="t_v1" type="number" placeholder="PKL" class="bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="t_v2" type="number" placeholder="D-L" class="bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="t_v3" type="number" placeholder="D-R" class="bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="t_v4" type="number" placeholder="S-L" class="bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="t_v5" type="number" placeholder="S-R" class="bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="t_v6" type="number" placeholder="T-L" class="bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="t_v7" type="number" placeholder="T-R" class="col-span-2 bg-gray-50 p-3 text-[11px] rounded-xl">
+            </div>
+
+            <div id="fieldsKAS" class="hidden space-y-3">
+                <input id="k_tgl" type="date" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+                <select id="k_tipe" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl"><option value="MASUK">MASUK</option><option value="KELUAR">KELUAR</option></select>
+                <input id="k_nominal" type="number" placeholder="NOMINAL" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="k_ket" type="text" placeholder="KETERANGAN" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+            </div>
+
+            <div id="fieldsS_MASUK" class="hidden space-y-3">
+                <input id="sm_tgl" type="date" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="sm_perihal" type="text" placeholder="PERIHAL" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="sm_pengirim" type="text" placeholder="PENGIRIM" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+            </div>
+            
+            <div id="fieldsS_KELUAR" class="hidden space-y-3">
+                <input id="sk_tgl" type="date" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="sk_nomor" type="text" placeholder="NOMOR SURAT" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="sk_perihal" type="text" placeholder="PERIHAL" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+                <input id="sk_penerima" type="text" placeholder="PENERIMA" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
+            </div>
+
+            <div class="flex gap-2">
+                <button type="button" onclick="closeModal()" class="flex-1 py-4 bg-gray-100 text-gray-500 rounded-xl text-[10px] font-bold">BATAL</button>
+                <button type="button" onclick="saveData()" class="flex-1 py-4 bg-green-700 text-white rounded-xl text-[10px] font-bold uppercase">Simpan Data</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // --- KONFIGURASI FIREBASE ---
+        const firebaseConfig = {
+        apiKey: "AIzaSyCjEw50bBVEEOWYp9mmIoNMMB60KMjsIoI",
+        authDomain: "datayahari2026.firebaseapp.com",
+        databaseURL: "https://datayahari2026-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "datayahari2026",
+        storageBucket: "datayahari2026.firebasestorage.app",
+        messagingSenderId: "1086483867247",
+        appId: "1:1086483867247:web:8c2a9a62d2060a2db1cf9a"
+    };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let currentMenu = "ANGGOTA";
+        let db = { ANGGOTA: {}, FISIK: {}, SENI: {}, TEKNIK: {}, KAS: {}, S_MASUK: {}, S_KELUAR: {}, ABSENSI: {} };
+
+        // Realtime Listener
+        database.ref().on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                db = {
+                    ANGGOTA: data.ANGGOTA || {},
+                    FISIK: data.FISIK || {},
+                    SENI: data.SENI || {},
+                    TEKNIK: data.TEKNIK || {},
+                    KAS: data.KAS || {},
+                    S_MASUK: data.S_MASUK || {},
+                    S_KELUAR: data.S_KELUAR || {},
+                    ABSENSI: data.ABSENSI || {}
+                };
+            }
+            if(document.getElementById('tableView').classList.contains('hidden')) {
+                updateDashboard();
+            } else {
+                renderTable();
+                updateDashboard();
+            }
+        });
+
+        function formatRibuan(num) { return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
+
+        function toggleSidebar() { 
+            const sb = document.getElementById('sidebar');
+            const ov = document.getElementById('sidebarOverlay');
+            const isOpen = !sb.classList.contains('-translate-x-full');
+            if (isOpen) {
+                sb.classList.add('-translate-x-full');
+                ov.style.display = 'none';
+            } else {
+                sb.classList.remove('-translate-x-full');
+                ov.style.display = 'block';
+            }
+        }
+
+        function toggleSub(id) { document.getElementById(id).classList.toggle('hidden'); }
+
+        function handleMenuClick(name) {
+            const dashView = document.getElementById('mainDashboardView');
+            const tableView = document.getElementById('tableView');
+            if (name === 'DASHBOARD') {
+                dashView.classList.remove('hidden'); tableView.classList.add('hidden');
+                updateDashboard();
+            } else {
+                dashView.classList.add('hidden'); tableView.classList.remove('hidden');
+                currentMenu = name;
+                renderTable();
+            }
+            toggleSidebar();
+        }
+
+        function renderTable() {
+            const header = document.getElementById('tableHeader');
+            const body = document.getElementById('mainTableBody');
+            body.innerHTML = "";
+            let headHtml = `<tr><th class="sticky-col">NAMA LENGKAP</th>`;
+            
+            if(currentMenu === 'ANGGOTA') headHtml += `<th>USIA</th><th>JK</th>`;
+            else if(currentMenu === 'ABSENSI') headHtml += `<th>JK</th><th>KELAS</th><th>TGL</th><th>HADIR</th><th>MATERI</th><th>PEMBINA</th>`;
+            else if(currentMenu === 'FISIK') headHtml += `<th>SPR</th><th>P-U</th><th>S-U</th><th>B-U</th><th>S-J</th><th class="bg-avg">AVG</th>`;
+            else if(currentMenu === 'SENI') headHtml += `<th>BAKU</th><th>IPSI</th><th class="bg-avg">AVG</th>`;
+            else if(currentMenu === 'TEKNIK') headHtml += `<th>PKL</th><th>D-L</th><th>D-R</th><th>S-L</th><th>S-R</th><th>T-L</th><th>T-R</th><th class="bg-avg">AVG</th>`;
+            else if(currentMenu === 'KAS') headHtml = `<tr><th class="sticky-col">TANGGAL</th><th>TIPE</th><th>NOMINAL</th><th>KET</th>`;
+            else if(currentMenu === 'S_MASUK') headHtml = `<tr><th class="sticky-col">TANGGAL</th><th>PERIHAL</th><th>PENGIRIM</th>`;
+            else if(currentMenu === 'S_KELUAR') headHtml = `<tr><th class="sticky-col">TANGGAL</th><th>NOMOR</th><th>PERIHAL</th><th>PENERIMA</th>`;
+            
+            header.innerHTML = headHtml + `<th class="col-action">AKSI</th></tr>`;
+            
+            const currentData = db[currentMenu];
+            Object.keys(currentData).forEach((key) => {
+                const item = currentData[key];
+                let row = `<tr><td class="font-bold sticky-col uppercase">${item.name || item.tgl}</td>`;
+                if(currentMenu === 'ANGGOTA') row += `<td class="text-center">${item.usia}</td><td class="text-center font-bold">${item.jk}</td>`;
+                else if(currentMenu === 'ABSENSI') row += `<td class="text-center">${item.jk}</td><td class="text-center">${item.kelas}</td><td class="text-center">${item.tgl}</td><td class="text-center font-bold">${item.hadir}</td><td class="text-center">${item.materi}</td><td class="text-center">${item.pembina}</td>`;
+                else if(currentMenu === 'FISIK') row += `<td class="text-center">${item.v1}</td><td class="text-center">${item.v2}</td><td class="text-center">${item.v3}</td><td class="text-center">${item.v4}</td><td class="text-center">${item.v5}</td><td class="bg-avg text-center">${item.avg}</td>`;
+                else if(currentMenu === 'SENI') row += `<td class="text-center">${item.v1}</td><td class="text-center">${item.v2}</td><td class="bg-avg text-center">${item.avg}</td>`;
+                else if(currentMenu === 'TEKNIK') row += `<td class="text-center">${item.v1}</td><td class="text-center">${item.v2}</td><td class="text-center">${item.v3}</td><td class="text-center">${item.v4}</td><td class="text-center">${item.v5}</td><td class="text-center">${item.v6}</td><td class="text-center">${item.v7}</td><td class="bg-avg text-center">${item.avg}</td>`;
+                else if(currentMenu === 'KAS') row += `<td class="text-center font-bold ${item.tipe === 'MASUK' ? 'text-green-600' : 'text-red-600'}">${item.tipe}</td><td class="text-right">${formatRibuan(item.nominal)}</td><td class="text-center">${item.ket}</td>`;
+                else if(currentMenu === 'S_MASUK') row += `<td>${item.perihal}</td><td>${item.pengirim}</td>`;
+                else if(currentMenu === 'S_KELUAR') row += `<td>${item.nomor}</td><td>${item.perihal}</td><td>${item.penerima}</td>`;
+                
+                body.insertAdjacentHTML('beforeend', row + `
+                    <td class="flex justify-center gap-2">
+                        <button onclick="editData('${key}')" class="text-blue-500 font-bold">✎</button>
+                        <button onclick="deleteData('${key}')" class="text-red-500 font-bold">✕</button>
+                    </td></tr>`);
+            });
+        }
+
+        function saveData() {
+            const key = document.getElementById('editKey').value;
+            let entry = {};
+            
+            if(currentMenu === 'ABSENSI') {
+                entry = { name: document.getElementById('inputName').value.toUpperCase(), jk: document.getElementById('a_jk').value, kelas: document.getElementById('a_kelas').value.toUpperCase(), tgl: document.getElementById('a_tgl').value, hadir: document.getElementById('a_hadir').value, materi: document.getElementById('a_materi').value.toUpperCase(), pembina: document.getElementById('a_pembina').value.toUpperCase() };
+            } else if(currentMenu === 'KAS') { 
+                entry = { tgl: document.getElementById('k_tgl').value, tipe: document.getElementById('k_tipe').value, nominal: document.getElementById('k_nominal').value, ket: document.getElementById('k_ket').value.toUpperCase() }; 
+            } else if(currentMenu === 'S_MASUK' || currentMenu === 'S_KELUAR') {
+                entry = { tgl: currentMenu === 'S_MASUK' ? document.getElementById('sm_tgl').value : document.getElementById('sk_tgl').value };
+                if(currentMenu === 'S_MASUK') { entry.perihal = document.getElementById('sm_perihal').value.toUpperCase(); entry.pengirim = document.getElementById('sm_pengirim').value.toUpperCase(); }
+                else { entry.nomor = document.getElementById('sk_nomor').value.toUpperCase(); entry.perihal = document.getElementById('sk_perihal').value.toUpperCase(); entry.penerima = document.getElementById('sk_penerima').value.toUpperCase(); }
+            } else {
+                entry = { name: document.getElementById('inputName').value.toUpperCase() };
+                if(currentMenu === 'ANGGOTA') { entry.usia = document.getElementById('inputUsia').value; entry.jk = document.getElementById('inputJK').value; }
+                if(currentMenu === 'FISIK') { let v = [1,2,3,4,5].map(i => document.getElementById('f_v'+i).value || 0); entry.avg = (v.reduce((a,b)=>parseFloat(a)+parseFloat(b),0)/5).toFixed(1); v.forEach((val, i) => entry['v'+(i+1)] = val); }
+                if(currentMenu === 'SENI') { let v = [1,2].map(i => document.getElementById('s_v'+i).value || 0); entry.avg = (v.reduce((a,b)=>parseFloat(a)+parseFloat(b),0)/2).toFixed(1); v.forEach((val, i) => entry['v'+(i+1)] = val); }
+                if(currentMenu === 'TEKNIK') { let v = [1,2,3,4,5,6,7].map(i => document.getElementById('t_v'+i).value || 0); entry.avg = (v.reduce((a,b)=>parseFloat(a)+parseFloat(b),0)/7).toFixed(1); v.forEach((val, i) => entry['v'+(i+1)] = val); }
+            }
+
+            if(key) {
+                database.ref(currentMenu + '/' + key).set(entry);
+            } else {
+                database.ref(currentMenu).push(entry);
+            }
+            closeModal();
+        }
+
+        function editData(key) {
+            let item = db[currentMenu][key]; document.getElementById('editKey').value = key; openModal();
+            if(item.name) document.getElementById('inputName').value = item.name;
+            if(currentMenu === 'ABSENSI') { document.getElementById('a_jk').value = item.jk; document.getElementById('a_kelas').value = item.kelas; document.getElementById('a_tgl').value = item.tgl; document.getElementById('a_hadir').value = item.hadir; document.getElementById('a_materi').value = item.materi; document.getElementById('a_pembina').value = item.pembina; }
+            if(currentMenu === 'ANGGOTA') { document.getElementById('inputJK').value = item.jk; document.getElementById('inputUsia').value = item.usia; }
+            if(currentMenu === 'FISIK') [1,2,3,4,5].forEach(i => document.getElementById('f_v'+i).value = item['v'+i]);
+            if(currentMenu === 'SENI') [1,2].forEach(i => document.getElementById('s_v'+i).value = item['v'+i]);
+            if(currentMenu === 'TEKNIK') [1,2,3,4,5,6,7].forEach(i => document.getElementById('t_v'+i).value = item['v'+i]);
+            if(currentMenu === 'KAS') { document.getElementById('k_tgl').value = item.tgl; document.getElementById('k_tipe').value = item.tipe; document.getElementById('k_nominal').value = item.nominal; document.getElementById('k_ket').value = item.ket; }
+        }
+
+        function openModal() {
+            ['baseIdentity','fieldsANGGOTA','fieldsFISIK','fieldsSENI','fieldsTEKNIK','fieldsKAS','fieldsS_MASUK','fieldsS_KELUAR','fieldsABSENSI'].forEach(f => document.getElementById(f).classList.add('hidden'));
+            if(['KAS','S_MASUK','S_KELUAR'].includes(currentMenu)) document.getElementById('fields'+currentMenu).classList.remove('hidden');
+            else { document.getElementById('baseIdentity').classList.remove('hidden'); document.getElementById('fields'+currentMenu).classList.remove('hidden'); }
+            document.getElementById('modalOverlay').classList.remove('hidden'); setTimeout(() => document.getElementById('inputModal').classList.remove('translate-y-full'), 10);
+        }
+
+        function closeModal() { document.getElementById('inputModal').classList.add('translate-y-full'); setTimeout(() => { document.getElementById('modalOverlay').classList.add('hidden'); document.getElementById('dynamicForm').reset(); document.getElementById('editKey').value = ""; }, 300); }
+
+        function hitungUsia() { 
+            const tglVal = document.getElementById('inputTglLahir').value; if(!tglVal) return;
+            const tgl = new Date(tglVal); const usia = new Date().getFullYear() - tgl.getFullYear();
+            let kual = "DEWASA"; if (usia <= 11) kual = "USIA DINI"; else if (usia <= 14) kual = "PRA REMAJA"; else if (usia <= 17) kual = "REMAJA";
+            document.getElementById('inputUsia').value = kual; 
+        }
+
+        function updateDashboard() { 
+            document.getElementById('dashTotalAnggota').innerText = Object.keys(db.ANGGOTA).length; 
+            document.getElementById('dashTotalSurat').innerText = Object.keys(db.S_MASUK).length + Object.keys(db.S_KELUAR).length;
+            let saldo = Object.values(db.KAS).reduce((acc, curr) => curr.tipe === 'MASUK' ? acc + parseInt(curr.nominal||0) : acc - parseInt(curr.nominal||0), 0);
+            document.getElementById('dashTotalKas').innerText = formatRibuan(saldo);
+        }
+
+        function deleteData(key) { if(confirm("HAPUS DATA?")) { database.ref(currentMenu + '/' + key).remove(); } }
+        function searchTable() { const q = document.getElementById('searchInput').value.toUpperCase(); document.querySelectorAll('#mainTableBody tr').forEach(row => row.style.display = row.innerText.includes(q) ? "" : "none"); }
+        function exportToExcel() { const dataArr = Object.values(db[currentMenu]); const ws = XLSX.utils.json_to_sheet(dataArr); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, currentMenu); XLSX.writeFile(wb, `DATA_${currentMenu}.xlsx`); }
+        function exportToPDF() { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.autoTable({ html: '#targetTable' }); doc.save(`DATA_${currentMenu}.pdf`); }
+        function exportToWord() { let html = document.getElementById('targetTable').outerHTML; let blob = new Blob(['\ufeff', html], { type: 'application/msword' }); let url = URL.createObjectURL(blob); let link = document.createElement('a'); link.href = url; link.download = `DATA_${currentMenu}.doc`; link.click(); }
+    </script>
+</body>
+</html>
