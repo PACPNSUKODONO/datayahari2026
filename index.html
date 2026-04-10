@@ -3,370 +3,363 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PN YAHARI & NAWAWI</title>
+    <title>Smart Pagar Nusa</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; overflow: hidden; background-color: #f8fafc; text-transform: uppercase; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .transition-soft { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .table-container { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; }
-        table { width: auto; font-size: 9px; border-collapse: collapse; table-layout: fixed; } 
-        th, td { padding: 6px 8px !important; border: 1px solid #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 80px; }
-        th { background: #f1f5f9; color: #64748b; font-size: 8px !important; text-align: center; }
-        .sticky-col { position: sticky; left: 0; background: white; z-index: 10; border-right: 2px solid #cbd5e1; width: 140px !important; text-align: left; }
-        .bg-avg { background-color: #f0fdf4; font-weight: 800; color: #15803d; width: 50px; }
-        .col-action { width: 60px; text-align: center; }
-        #sidebarOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 40; display: none; backdrop-blur: 2px; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #ffffff; color: #1e293b; overflow-x: hidden; }
+        .bento-card { border-radius: 40px 12px 40px 12px; transition: all 0.3s ease; aspect-ratio: 4/5; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); cursor: pointer; background: #f8fafc; border: 1px solid #f1f5f9; }
+        .bento-card:active { transform: scale(0.92); }
+        .realistic-icon { font-size: 45px; filter: drop-shadow(0 8px 6px rgba(0,0,0,0.1)); z-index: 10; }
+        .page { display: none; padding-bottom: 50px; }
+        .page.active { display: block; animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .form-input { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #e2e8f0; background-color: #f8fafc; font-size: 13px; outline: none; }
+        .capitalize-input { text-transform: capitalize; }
+        label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 3px; display: block; margin-top: 8px; }
+        .admin-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+        .admin-table th { background: #f8fafc; padding: 10px 5px; text-align: left; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+        .admin-table td { padding: 10px 5px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        .custom-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
+        .modal-content { background: white; width: 100%; max-width: 550px; border-radius: 35px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto; }
+        #success-overlay { display: none; position: fixed; inset: 0; background: white; z-index: 5000; flex-direction: column; align-items: center; justify-content: center; }
+        .btn-save { background: #10b981; color: white; padding: 12px; border-radius: 12px; font-weight: 800; width: 100%; cursor: pointer; border: none; }
+        .n-input { text-align: center; font-weight: bold; color: #059669; }
     </style>
 </head>
-<body class="text-slate-900">
+<body>
 
-    <div id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div id="success-overlay">
+        <span class="text-8xl">✅</span>
+        <p class="text-emerald-600 font-black mt-4 text-2xl uppercase">Berhasil</p>
+    </div>
 
-    <div id="sidebar" class="fixed inset-y-0 left-0 w-56 bg-slate-900 text-white z-50 transition-soft -translate-x-full shadow-2xl overflow-y-auto no-scrollbar">
-        <div class="p-4 border-b border-slate-800 text-center">
-            <p class="text-[8px] text-green-500 font-bold tracking-[0.2em]">DASHBOARD</p>
-            <p class="text-[10px] font-bold leading-tight mt-1">PAGAR NUSA<br>YAHARI & NAWAWI</p>
+    <header class="flex items-center justify-between px-6 py-4 sticky top-0 bg-white/80 backdrop-blur-md z-[500] border-b">
+        <div class="flex items-center gap-3">
+            <div id="brand-icon" class="w-10 h-10 bg-emerald-700 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200"><i class="fas fa-shield-alt text-xl"></i></div>
+            <button id="back-btn" onclick="showPage('dashboard')" class="hidden w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center"><i class="fas fa-arrow-left text-slate-600"></i></button>
+            <h1 id="header-title" class="text-lg font-black text-slate-900 leading-none">Smart Pagar Nusa</h1>
         </div>
-        <nav class="p-2 space-y-1">
-            <a href="#" onclick="handleMenuClick('DASHBOARD')" class="flex items-center gap-2 p-2.5 rounded-lg hover:bg-slate-800 text-slate-400 text-[10px]">🏠 HOME</a>
-            
-            <button onclick="toggleSub('subDB')" class="w-full flex items-center justify-between p-2.5 rounded-lg hover:bg-slate-800 text-slate-400 text-[10px]">
-                <span>📁 DATABASE</span><span class="text-[8px]">▼</span>
-            </button>
-            <div id="subDB" class="hidden flex flex-col ml-3 border-l border-slate-700 text-[9px]">
-                <a href="#" onclick="handleMenuClick('ANGGOTA')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• DATA ANGGOTA</a>
-                <a href="#" onclick="handleMenuClick('FISIK')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• NILAI FISIK</a>
-                <a href="#" onclick="handleMenuClick('SENI')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• NILAI SENI</a>
-                <a href="#" onclick="handleMenuClick('TEKNIK')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• NILAI TEKNIK</a>
-            </div>
+    </header>
 
-            <button onclick="toggleSub('subADM')" class="w-full flex items-center justify-between p-2.5 rounded-lg hover:bg-slate-800 text-slate-400 text-[10px]">
-                <span>📑 ADMINISTRASI</span><span class="text-[8px]">▼</span>
-            </button>
-            <div id="subADM" class="hidden flex flex-col ml-3 border-l border-slate-700 text-[9px]">
-                <a href="#" onclick="handleMenuClick('ABSENSI')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• ABSENSI</a>
-                <a href="#" onclick="handleMenuClick('S_MASUK')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• SURAT MASUK</a>
-                <a href="#" onclick="handleMenuClick('S_KELUAR')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• SURAT KELUAR</a>
+    <main>
+        <section id="page-dashboard" class="page active px-6 mt-6">
+            <div class="grid grid-cols-3 gap-4">
+                <div class="text-center" onclick="showPage('statistik', 'Statistik')"><div class="bento-card bg-emerald-50"><span class="realistic-icon">📊</span></div><p class="text-[9px] font-black mt-2 uppercase">Statistik</p></div>
+                <div class="text-center" onclick="openModal('input-modal')"><div class="bento-card bg-blue-50"><span class="realistic-icon">📝</span></div><p class="text-[9px] font-black mt-2 uppercase">Input Data</p></div>
+                <div class="text-center" onclick="showPage('database', 'Database')"><div class="bento-card bg-indigo-50"><span class="realistic-icon">📁</span></div><p class="text-[9px] font-black mt-2 uppercase">Database</p></div>
+                <div class="text-center" onclick="openModal('admin-input-modal')"><div class="bento-card bg-rose-50"><span class="realistic-icon">📥</span></div><p class="text-[9px] font-black mt-2 uppercase">In. Admin</p></div>
+                <div class="text-center" onclick="showPage('administrasi', 'Administrasi')"><div class="bento-card bg-orange-50"><span class="realistic-icon">🏢</span></div><p class="text-[9px] font-black mt-2 uppercase">Administrasi</p></div>
+                <div class="text-center" onclick="openModal('penilaian-modal')"><div class="bento-card bg-purple-50"><span class="realistic-icon">🚀</span></div><p class="text-[9px] font-black mt-2 uppercase">Input Nilai</p></div>
+                <div class="text-center" onclick="showPage('daftar-nilai', 'Daftar Nilai')"><div class="bento-card bg-amber-50"><span class="realistic-icon">🏆</span></div><p class="text-[9px] font-black mt-2 uppercase">Daftar Nilai</p></div>
+                <div class="text-center" onclick="openModal('materi-modal')"><div class="bento-card bg-cyan-50"><span class="realistic-icon">📖</span></div><p class="text-[9px] font-black mt-2 uppercase">Materi</p></div>
+                <div class="text-center" onclick="showPage('daftar-materi', 'Daftar Materi')"><div class="bento-card bg-sky-50"><span class="realistic-icon">📚</span></div><p class="text-[9px] font-black mt-2 uppercase">Daftar Materi</p></div>
+                <div class="text-center" onclick="showPage('settings', 'Set Admin')"><div class="bento-card bg-slate-50"><span class="realistic-icon">⚙️</span></div><p class="text-[9px] font-black mt-2 uppercase">Set Admin</p></div>
             </div>
+        </section>
 
-            <button onclick="toggleSub('subKEU')" class="w-full flex items-center justify-between p-2.5 rounded-lg hover:bg-slate-800 text-slate-400 text-[10px]">
-                <span>💰 KEUANGAN</span><span class="text-[8px]">▼</span>
-            </button>
-            <div id="subKEU" class="hidden flex flex-col ml-3 border-l border-slate-700 text-[9px]">
-                <a href="#" onclick="handleMenuClick('KAS')" class="p-2 pl-4 text-slate-500 hover:text-green-500">• KAS</a>
+        <section id="page-statistik" class="page px-4 pt-4">
+            <div class="bg-white p-4 rounded-3xl border shadow-sm">
+                <select id="stat-filter" onchange="updateChart()" class="form-input font-bold text-emerald-700 mb-6">
+                    <option value="kas">Laporan Kas</option>
+                    <option value="absensi">Absensi (H/S/I/A)</option>
+                    <option value="anggota">Anggota (Putra/Putri)</option>
+                    <option value="pelatih">Pelatih & Asisten</option>
+                </select>
+                <div class="relative h-64"><canvas id="statChart"></canvas></div>
             </div>
-        </nav>
+        </section>
+
+        <section id="page-database" class="page px-4 pt-4">
+            <div class="flex gap-2 mb-4">
+                <select id="db-filter" onchange="renderDB()" class="form-input font-bold text-emerald-700">
+                    <option value="anggota">Anggota</option>
+                    <option value="asisten pelatih">Asisten Pelatih</option>
+                    <option value="pelatih">Pelatih</option>
+                </select>
+                <button onclick="exportTable('db')" class="bg-slate-800 text-white p-2 rounded-xl text-xs">EXPORT</button>
+            </div>
+            <input type="text" id="db-search" oninput="renderDB()" placeholder="Cari nama..." class="form-input mb-4">
+            <div class="overflow-x-auto bg-white rounded-xl border">
+                <table class="admin-table w-full">
+                    <thead><tr><th>Foto</th><th>Nama</th><th>L/P</th><th>Usia</th><th>Aksi</th></tr></thead>
+                    <tbody id="db-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="page-administrasi" class="page px-4 pt-4">
+            <div class="flex gap-2 mb-4">
+                <select id="adm-table-filter" onchange="renderAdmTable()" class="form-input font-bold text-orange-700">
+                    <option value="absensi">Absensi</option>
+                    <option value="agenda">Agenda</option>
+                    <option value="surat_masuk">Surat Masuk</option>
+                    <option value="surat_keluar">Surat Keluar</option>
+                    <option value="kas">Laporan Kas</option>
+                </select>
+                <button onclick="exportTable('adm')" class="bg-slate-800 text-white p-2 rounded-xl text-xs">EXPORT</button>
+            </div>
+            <div class="overflow-x-auto bg-white rounded-xl border">
+                <table class="admin-table w-full"><thead id="adm-thead"></thead><tbody id="adm-tbody"></tbody></table>
+            </div>
+        </section>
+
+        <section id="page-daftar-nilai" class="page px-4 pt-4">
+            <div class="flex justify-between mb-4"><h2 class="font-black text-xs uppercase text-amber-700">Rekap Nilai Anggota</h2><button onclick="exportTable('nilai')" class="bg-slate-800 text-white p-2 rounded-xl text-xs">EXPORT</button></div>
+            <div class="overflow-x-auto bg-white rounded-xl border">
+                <table class="admin-table w-full">
+                    <thead><tr><th>Nama</th><th>Usia</th><th>Sabuk</th><th>Fisik</th><th>Teknik</th><th>Seni</th><th>Rata2</th><th>Aksi</th></tr></thead>
+                    <tbody id="nilai-list-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="page-daftar-materi" class="page px-4 pt-4">
+            <div class="overflow-x-auto bg-white rounded-xl border"><table class="admin-table w-full"><thead><tr><th>Tgl</th><th>Materi</th><th>Pemateri</th><th>Aksi</th></tr></thead><tbody id="materi-list-body"></tbody></table></div>
+        </section>
+    </main>
+
+    <div id="input-modal" class="custom-modal" onclick="closeModal('input-modal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2 class="font-black text-lg uppercase mb-4 text-emerald-700">Input Data Baru</h2>
+            <form onsubmit="handleSave(event, 'members')" class="space-y-2">
+                <select name="kategori" id="f-kat-member" onchange="toggleMemberFields()" class="form-input font-bold text-emerald-600">
+                    <option value="anggota">Anggota</option><option value="asisten pelatih">Asisten Pelatih</option><option value="pelatih">Pelatih</option>
+                </select>
+                <input type="file" name="foto" accept=".jpg,.jpeg,.pdf" class="form-input" required>
+                <input type="text" name="nia" placeholder="NIA (Angka)" inputmode="numeric" class="form-input">
+                <input type="text" name="nama" placeholder="Nama Lengkap" class="form-input capitalize-input" required>
+                <select name="jk" class="form-input" required><option value="L">Laki-laki</option><option value="P">Perempuan</option></select>
+                <input type="text" name="wa" placeholder="WhatsApp (Angka)" inputmode="numeric" class="form-input" required>
+                <div class="grid grid-cols-2 gap-2"><input type="text" name="tmp_lahir" placeholder="Tempat Lahir" class="form-input capitalize-input" required><input type="date" name="tgl_lahir" id="f-tgl" onchange="autoAge()" class="form-input" required></div>
+                <input type="text" name="kualifikasi" id="f-usia" placeholder="Kualifikasi Usia" class="form-input bg-slate-50 font-bold" readonly>
+                <textarea name="alamat" placeholder="Alamat Lengkap" class="form-input capitalize-input" required></textarea>
+                <div id="box-member-extra" class="space-y-2">
+                    <input type="text" name="unit" placeholder="Ranting / Rayon" class="form-input capitalize-input">
+                    <select name="tingkatan" class="form-input">
+                        <option>Dasar</option><option>Putih</option><option>Kuning</option><option>Merah</option><option>Biru</option><option>Coklat</option><option>Hitam</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-save mt-4">SIMPAN DATA</button>
+            </form>
+        </div>
     </div>
 
-    <div class="flex flex-col h-screen w-full relative">
-        <header class="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
-            <button onclick="toggleSidebar()" class="w-9 h-9 flex items-center justify-center bg-gray-50 rounded-xl font-bold">≡</button>
-            <h1 class="text-[9px] font-bold text-green-700 tracking-widest text-center uppercase">PAGAR NUSA YAHARI & NAWAWI</h1>
-            <div class="w-8 h-8"></div>
-        </header>
-
-        <main class="flex-1 overflow-hidden flex flex-col px-4 py-4">
-            <div id="mainDashboardView" class="grid grid-cols-1 gap-4 overflow-y-auto no-scrollbar">
-                <div class="bg-gradient-to-br from-green-700 to-green-900 p-6 rounded-[28px] text-white shadow-xl">
-                    <p class="text-[9px] font-bold opacity-70 tracking-widest uppercase">Total Anggota</p>
-                    <p class="text-4xl font-bold mt-1" id="dashTotalAnggota">0</p>
+    <div id="admin-input-modal" class="custom-modal" onclick="closeModal('admin-input-modal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2 class="font-black text-lg uppercase mb-4 text-orange-700">Input Administrasi</h2>
+            <form onsubmit="handleSave(event, 'adm')" class="space-y-2">
+                <select name="sub_kat" id="adm-select" onchange="toggleAdmFields()" class="form-input font-bold text-orange-600">
+                    <option value="absensi">Absensi</option><option value="agenda">Agenda</option><option value="surat_masuk">Surat Masuk</option><option value="surat_keluar">Surat Keluar</option><option value="kas">Laporan Kas</option>
+                </select>
+                <div id="fields-absensi" class="space-y-2">
+                    <select name="nama" class="form-input select-member" onchange="syncMemberData(this)"></select>
+                    <div class="grid grid-cols-2 gap-2"><input type="text" name="kualifikasi" placeholder="Usia" class="form-input bg-slate-50" readonly><input type="text" name="tingkatan" placeholder="Sabuk" class="form-input bg-slate-50" readonly></div>
+                    <input type="date" name="tanggal" class="form-input" required><input type="text" name="materi_abs" placeholder="Materi" class="form-input capitalize-input"><select name="ket" class="form-input"><option>Hadir</option><option>Sakit</option><option>Izin</option><option>Alpha</option></select>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-white p-5 rounded-[24px] shadow-sm border border-gray-50 text-center">
-                        <p class="text-[8px] font-bold text-gray-400 uppercase">Total Surat</p>
-                        <p class="text-xl font-bold mt-1" id="dashTotalSurat">0</p>
-                    </div>
-                    <div class="bg-white p-5 rounded-[24px] shadow-sm border border-gray-50 text-center">
-                        <p class="text-[8px] font-bold text-gray-400 uppercase">Saldo Kas</p>
-                        <p class="text-[11px] font-bold text-green-600 mt-1 uppercase" id="dashTotalKas">0</p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="tableView" class="hidden flex-1 overflow-hidden flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm">
-                <div class="p-3 border-b border-gray-50 bg-white space-y-3">
-                    <div class="flex justify-between items-center gap-2">
-                        <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="CARI..." class="flex-1 bg-gray-50 border-none rounded-lg px-3 py-2 text-[10px] outline-none">
-                        <button onclick="openModal()" class="bg-green-700 text-white px-4 py-2 rounded-lg text-[9px] font-bold">+ TAMBAH</button>
-                    </div>
-                    <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                        <button onclick="exportToExcel()" class="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-md text-[8px] font-bold">EXCEL</button>
-                        <button onclick="exportToWord()" class="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-md text-[8px] font-bold">WORD</button>
-                        <button onclick="exportToPDF()" class="bg-red-50 text-red-700 px-3 py-1.5 rounded-md text-[8px] font-bold">PDF</button>
-                    </div>
-                </div>
-                <div class="flex-1 overflow-hidden">
-                    <div class="table-container h-full overflow-auto no-scrollbar">
-                        <table id="targetTable">
-                            <thead class="sticky top-0 z-10" id="tableHeader"></thead>
-                            <tbody id="mainTableBody" class="divide-y divide-gray-50"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </main>
+                <div id="fields-surat" class="hidden space-y-2"><input type="date" name="tanggal" class="form-input"><input type="text" name="nomor" placeholder="Nomor Surat" class="form-input"><input type="text" name="perihal" placeholder="Perihal" class="form-input capitalize-input"><input type="text" name="penerbit" placeholder="Penerbit/Tujuan" class="form-input capitalize-input"><input type="file" name="file" class="form-input"></div>
+                <div id="fields-kas" class="hidden space-y-2"><input type="date" name="tanggal" class="form-input"><input type="number" name="masuk" id="kas-in" placeholder="Pemasukan" class="form-input" oninput="calcSaldo()"><input type="number" name="keluar" id="kas-out" placeholder="Pengeluaran" class="form-input" oninput="calcSaldo()"><input type="text" name="saldo" id="kas-saldo" placeholder="Total Saldo" class="form-input bg-slate-50 font-bold" readonly><input type="text" name="ket_kas" placeholder="Keterangan" class="form-input"></div>
+                <div id="fields-agenda" class="hidden space-y-2"><input type="date" name="tanggal" class="form-input"><input type="text" name="nama_keg" placeholder="Nama Kegiatan" class="form-input capitalize-input"><input type="text" name="tempat" placeholder="Tempat" class="form-input capitalize-input"><input type="text" name="penyelenggara" placeholder="Penyelenggara" class="form-input capitalize-input"><input type="file" name="dok" class="form-input"></div>
+                <button type="submit" class="btn-save mt-4">SIMPAN ADM</button>
+            </form>
+        </div>
     </div>
 
-    <div id="modalOverlay" onclick="closeModal()" class="fixed inset-0 bg-slate-900/40 z-[60] hidden backdrop-blur-[2px]"></div>
-    <div id="inputModal" class="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[70] transform translate-y-full transition-soft shadow-2xl p-6 overflow-y-auto max-h-[90vh] no-scrollbar">
-        <form id="dynamicForm" class="space-y-4">
-            <input type="hidden" id="editKey" value="">
-            
-            <div id="baseIdentity">
-                <label class="text-[8px] font-bold text-gray-400 uppercase">Nama Lengkap</label>
-                <input id="inputName" type="text" class="w-full bg-gray-50 border-none rounded-xl p-3 text-[11px] outline-none mt-1">
-            </div>
+    <div id="penilaian-modal" class="custom-modal" onclick="closeModal('penilaian-modal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2 class="font-black text-lg uppercase mb-4 text-purple-700">Input Nilai Anggota</h2>
+            <form onsubmit="handleSave(event, 'nilai')" class="space-y-2">
+                <select name="nama_target" class="form-input select-member" onchange="syncMemberData(this)" required></select>
+                <div class="grid grid-cols-2 gap-2"><input type="text" name="kualifikasi" placeholder="Usia" class="form-input bg-slate-50" readonly><input type="text" name="tingkatan" placeholder="Sabuk" class="form-input bg-slate-50" readonly></div>
+                <select name="kategori" id="n-kat" onchange="toggleNilaiFields()" class="form-input font-bold text-purple-600"><option value="fisik">Nilai Fisik</option><option value="teknik">Nilai Teknik</option><option value="seni">Nilai Seni</option></select>
+                <input type="month" name="bulan" class="form-input" required>
+                <div id="n-fisik" class="grid grid-cols-2 gap-2 mt-4">
+                    <input type="text" name="v1" placeholder="Push Up" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="v2" placeholder="Sit Up" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="v3" placeholder="Back Up" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="v4" placeholder="Scout Jump" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="v5" placeholder="Sprint" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                </div>
+                <div id="n-teknik" class="hidden grid grid-cols-2 gap-2 mt-4">
+                    <input type="text" name="t1" placeholder="Pukulan Depan Kanan" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="t2" placeholder="Pukulan Depan Kiri" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="t3" placeholder="Tendangan Depan Kanan" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="t4" placeholder="Tendangan Depan Kiri" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="t5" placeholder="Tendangan Sabit Kanan" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="t6" placeholder="Tendangan Sabit Kiri" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="t7" placeholder="Tendangan T Kanan" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="t8" placeholder="Tendangan T Kiri" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="t9" placeholder="Sarkel Depan" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="t10" placeholder="Sarkel Belakang" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="t11" placeholder="Roll Depan" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="t12" placeholder="Roll Belakang" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                </div>
+                <div id="n-seni" class="hidden grid grid-cols-2 gap-2 mt-4">
+                    <input type="text" name="s1" placeholder="Seni Tunggal" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="s2" placeholder="Jurus Wudhu" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="s3" placeholder="Jurus SD A" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="s4" placeholder="Jurus SD B" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="s5" placeholder="Jurus SMP A" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="s6" placeholder="Jurus SMP B" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="s7" placeholder="Jurus SMA A" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                    <input type="text" name="s8" placeholder="Jurus SMA B" class="form-input n-input" inputmode="numeric" oninput="calcAverage()">
+                </div>
+                <div class="mt-4 pt-4 border-t text-center"><label class="text-emerald-600 font-black">RATA-RATA KATEGORI</label><input type="text" name="total_rata" id="n-rata-final" class="form-input bg-emerald-50 text-xl font-black text-emerald-700" readonly></div>
+                <button type="submit" class="btn-save mt-4 !bg-purple-600">SIMPAN PENILAIAN</button>
+            </form>
+        </div>
+    </div>
 
-            <div id="fieldsABSENSI" class="hidden space-y-3">
-                <select id="a_jk" class="w-full bg-gray-50 rounded-xl p-3 text-[11px] outline-none"><option value="PUTRA">PUTRA</option><option value="PUTRI">PUTRI</option></select>
-                <input id="a_kelas" type="text" placeholder="KELAS" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="a_tgl" type="date" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-                <select id="a_hadir" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl"><option value="HADIR">HADIR</option><option value="IZIN">IZIN</option><option value="SAKIT">SAKIT</option><option value="ALFA">ALFA</option></select>
-                <input id="a_materi" type="text" placeholder="MATERI LATIHAN" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="a_pembina" type="text" placeholder="PEMBINA" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-            </div>
-
-            <div id="fieldsANGGOTA" class="hidden space-y-3">
-                <select id="inputJK" class="w-full bg-gray-50 rounded-xl p-3 text-[11px] outline-none"><option value="PUTRA">PUTRA</option><option value="PUTRI">PUTRI</option></select>
-                <input id="inputTglLahir" type="date" onchange="hitungUsia()" class="w-full bg-gray-50 rounded-xl p-3 text-[11px] outline-none">
-                <input id="inputUsia" type="text" readonly class="w-full bg-green-50 text-green-700 font-bold p-3 text-[11px] rounded-xl" placeholder="KUALIFIKASI">
-            </div>
-
-            <div id="fieldsFISIK" class="hidden grid grid-cols-2 gap-2">
-                <input id="f_v1" type="number" placeholder="SPR" class="bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="f_v2" type="number" placeholder="P-U" class="bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="f_v3" type="number" placeholder="S-U" class="bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="f_v4" type="number" placeholder="B-U" class="bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="f_v5" type="number" placeholder="S-J" class="col-span-2 bg-gray-50 p-3 text-[11px] rounded-xl">
-            </div>
-
-            <div id="fieldsSENI" class="hidden space-y-2">
-                <input id="s_v1" type="number" placeholder="BAKU" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="s_v2" type="number" placeholder="IPSI" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-            </div>
-
-            <div id="fieldsTEKNIK" class="hidden grid grid-cols-2 gap-2">
-                <input id="t_v1" type="number" placeholder="PKL" class="bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="t_v2" type="number" placeholder="D-L" class="bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="t_v3" type="number" placeholder="D-R" class="bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="t_v4" type="number" placeholder="S-L" class="bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="t_v5" type="number" placeholder="S-R" class="bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="t_v6" type="number" placeholder="T-L" class="bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="t_v7" type="number" placeholder="T-R" class="col-span-2 bg-gray-50 p-3 text-[11px] rounded-xl">
-            </div>
-
-            <div id="fieldsKAS" class="hidden space-y-3">
-                <input id="k_tgl" type="date" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-                <select id="k_tipe" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl"><option value="MASUK">MASUK</option><option value="KELUAR">KELUAR</option></select>
-                <input id="k_nominal" type="number" placeholder="NOMINAL" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="k_ket" type="text" placeholder="KETERANGAN" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-            </div>
-
-            <div id="fieldsS_MASUK" class="hidden space-y-3">
-                <input id="sm_tgl" type="date" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="sm_perihal" type="text" placeholder="PERIHAL" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="sm_pengirim" type="text" placeholder="PENGIRIM" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-            </div>
-            
-            <div id="fieldsS_KELUAR" class="hidden space-y-3">
-                <input id="sk_tgl" type="date" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="sk_nomor" type="text" placeholder="NOMOR SURAT" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="sk_perihal" type="text" placeholder="PERIHAL" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-                <input id="sk_penerima" type="text" placeholder="PENERIMA" class="w-full bg-gray-50 p-3 text-[11px] rounded-xl">
-            </div>
-
-            <div class="flex gap-2">
-                <button type="button" onclick="closeModal()" class="flex-1 py-4 bg-gray-100 text-gray-500 rounded-xl text-[10px] font-bold">BATAL</button>
-                <button type="button" onclick="saveData()" class="flex-1 py-4 bg-green-700 text-white rounded-xl text-[10px] font-bold uppercase">Simpan Data</button>
-            </div>
-        </form>
+    <div id="materi-modal" class="custom-modal" onclick="closeModal('materi-modal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2 class="font-black text-lg uppercase mb-4 text-cyan-700">Input Materi Latihan</h2>
+            <form onsubmit="handleSave(event, 'materi')" class="space-y-2">
+                <input type="date" name="tanggal" class="form-input" required>
+                <select name="jenis" class="form-input font-bold"><option>Kuda-kuda</option><option>Pukulan</option><option>Tendangan</option><option>Bantingan</option><option>Teknik</option><option>Seni</option></select>
+                <input type="text" name="pemateri" placeholder="Nama Pemateri" class="form-input capitalize-input" required><textarea name="deskripsi" placeholder="Deskripsi Ringkas" class="form-input capitalize-input" required></textarea>
+                <button type="submit" class="btn-save mt-4 !bg-cyan-600">SIMPAN MATERI</button>
+            </form>
+        </div>
     </div>
 
     <script>
-        // --- KONFIGURASI FIREBASE ---
-        const firebaseConfig = {
-        apiKey: "AIzaSyCjEw50bBVEEOWYp9mmIoNMMB60KMjsIoI",
-        authDomain: "datayahari2026.firebaseapp.com",
-        databaseURL: "https://datayahari2026-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "datayahari2026",
-        storageBucket: "datayahari2026.firebasestorage.app",
-        messagingSenderId: "1086483867247",
-        appId: "1:1086483867247:web:8c2a9a62d2060a2db1cf9a"
-    };
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        let ps_data = JSON.parse(localStorage.getItem('ps_data_v2')) || { members: [], adm: [], materi: [], nilai: [], admins: [] };
+        let statChart;
 
-        let currentMenu = "ANGGOTA";
-        let db = { ANGGOTA: {}, FISIK: {}, SENI: {}, TEKNIK: {}, KAS: {}, S_MASUK: {}, S_KELUAR: {}, ABSENSI: {} };
-
-        // Realtime Listener
-        database.ref().on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                db = {
-                    ANGGOTA: data.ANGGOTA || {},
-                    FISIK: data.FISIK || {},
-                    SENI: data.SENI || {},
-                    TEKNIK: data.TEKNIK || {},
-                    KAS: data.KAS || {},
-                    S_MASUK: data.S_MASUK || {},
-                    S_KELUAR: data.S_KELUAR || {},
-                    ABSENSI: data.ABSENSI || {}
-                };
-            }
-            if(document.getElementById('tableView').classList.contains('hidden')) {
-                updateDashboard();
-            } else {
-                renderTable();
-                updateDashboard();
-            }
-        });
-
-        function formatRibuan(num) { return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
-
-        function toggleSidebar() { 
-            const sb = document.getElementById('sidebar');
-            const ov = document.getElementById('sidebarOverlay');
-            const isOpen = !sb.classList.contains('-translate-x-full');
-            if (isOpen) {
-                sb.classList.add('-translate-x-full');
-                ov.style.display = 'none';
-            } else {
-                sb.classList.remove('-translate-x-full');
-                ov.style.display = 'block';
-            }
+        function showPage(id, title) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + id).classList.add('active');
+            document.getElementById('back-btn').style.display = (id === 'dashboard') ? 'none' : 'flex';
+            document.getElementById('header-title').innerText = (id === 'dashboard') ? "Smart Pagar Nusa" : title;
+            if(id === 'database') renderDB();
+            if(id === 'administrasi') renderAdmTable();
+            if(id === 'daftar-nilai') renderNilaiTable();
+            if(id === 'daftar-materi') renderMateri();
+            if(id === 'statistik') updateChart();
         }
 
-        function toggleSub(id) { document.getElementById(id).classList.toggle('hidden'); }
+        function openModal(id) { 
+            document.getElementById(id).style.display = 'flex'; 
+            if(id === 'admin-input-modal' || id === 'penilaian-modal') populateMemberSelects();
+        }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-        function handleMenuClick(name) {
-            const dashView = document.getElementById('mainDashboardView');
-            const tableView = document.getElementById('tableView');
-            if (name === 'DASHBOARD') {
-                dashView.classList.remove('hidden'); tableView.classList.add('hidden');
-                updateDashboard();
-            } else {
-                dashView.classList.add('hidden'); tableView.classList.remove('hidden');
-                currentMenu = name;
-                renderTable();
-            }
-            toggleSidebar();
+        function toggleMemberFields() { const kat = document.getElementById('f-kat-member').value; document.getElementById('box-member-extra').style.display = (kat === 'pelatih') ? 'none' : 'block'; }
+
+        function toggleAdmFields() {
+            const kat = document.getElementById('adm-select').value;
+            ['fields-absensi', 'fields-agenda', 'fields-surat', 'fields-kas'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            if(kat.includes('surat')) document.getElementById('fields-surat').classList.remove('hidden'); else document.getElementById('fields-' + kat).classList.remove('hidden');
         }
 
-        function renderTable() {
-            const header = document.getElementById('tableHeader');
-            const body = document.getElementById('mainTableBody');
-            body.innerHTML = "";
-            let headHtml = `<tr><th class="sticky-col">NAMA LENGKAP</th>`;
-            
-            if(currentMenu === 'ANGGOTA') headHtml += `<th>USIA</th><th>JK</th>`;
-            else if(currentMenu === 'ABSENSI') headHtml += `<th>JK</th><th>KELAS</th><th>TGL</th><th>HADIR</th><th>MATERI</th><th>PEMBINA</th>`;
-            else if(currentMenu === 'FISIK') headHtml += `<th>SPR</th><th>P-U</th><th>S-U</th><th>B-U</th><th>S-J</th><th class="bg-avg">AVG</th>`;
-            else if(currentMenu === 'SENI') headHtml += `<th>BAKU</th><th>IPSI</th><th class="bg-avg">AVG</th>`;
-            else if(currentMenu === 'TEKNIK') headHtml += `<th>PKL</th><th>D-L</th><th>D-R</th><th>S-L</th><th>S-R</th><th>T-L</th><th>T-R</th><th class="bg-avg">AVG</th>`;
-            else if(currentMenu === 'KAS') headHtml = `<tr><th class="sticky-col">TANGGAL</th><th>TIPE</th><th>NOMINAL</th><th>KET</th>`;
-            else if(currentMenu === 'S_MASUK') headHtml = `<tr><th class="sticky-col">TANGGAL</th><th>PERIHAL</th><th>PENGIRIM</th>`;
-            else if(currentMenu === 'S_KELUAR') headHtml = `<tr><th class="sticky-col">TANGGAL</th><th>NOMOR</th><th>PERIHAL</th><th>PENERIMA</th>`;
-            
-            header.innerHTML = headHtml + `<th class="col-action">AKSI</th></tr>`;
-            
-            const currentData = db[currentMenu];
-            Object.keys(currentData).forEach((key) => {
-                const item = currentData[key];
-                let row = `<tr><td class="font-bold sticky-col uppercase">${item.name || item.tgl}</td>`;
-                if(currentMenu === 'ANGGOTA') row += `<td class="text-center">${item.usia}</td><td class="text-center font-bold">${item.jk}</td>`;
-                else if(currentMenu === 'ABSENSI') row += `<td class="text-center">${item.jk}</td><td class="text-center">${item.kelas}</td><td class="text-center">${item.tgl}</td><td class="text-center font-bold">${item.hadir}</td><td class="text-center">${item.materi}</td><td class="text-center">${item.pembina}</td>`;
-                else if(currentMenu === 'FISIK') row += `<td class="text-center">${item.v1}</td><td class="text-center">${item.v2}</td><td class="text-center">${item.v3}</td><td class="text-center">${item.v4}</td><td class="text-center">${item.v5}</td><td class="bg-avg text-center">${item.avg}</td>`;
-                else if(currentMenu === 'SENI') row += `<td class="text-center">${item.v1}</td><td class="text-center">${item.v2}</td><td class="bg-avg text-center">${item.avg}</td>`;
-                else if(currentMenu === 'TEKNIK') row += `<td class="text-center">${item.v1}</td><td class="text-center">${item.v2}</td><td class="text-center">${item.v3}</td><td class="text-center">${item.v4}</td><td class="text-center">${item.v5}</td><td class="text-center">${item.v6}</td><td class="text-center">${item.v7}</td><td class="bg-avg text-center">${item.avg}</td>`;
-                else if(currentMenu === 'KAS') row += `<td class="text-center font-bold ${item.tipe === 'MASUK' ? 'text-green-600' : 'text-red-600'}">${item.tipe}</td><td class="text-right">${formatRibuan(item.nominal)}</td><td class="text-center">${item.ket}</td>`;
-                else if(currentMenu === 'S_MASUK') row += `<td>${item.perihal}</td><td>${item.pengirim}</td>`;
-                else if(currentMenu === 'S_KELUAR') row += `<td>${item.nomor}</td><td>${item.perihal}</td><td>${item.penerima}</td>`;
-                
-                body.insertAdjacentHTML('beforeend', row + `
-                    <td class="flex justify-center gap-2">
-                        <button onclick="editData('${key}')" class="text-blue-500 font-bold">✎</button>
-                        <button onclick="deleteData('${key}')" class="text-red-500 font-bold">✕</button>
-                    </td></tr>`);
+        function toggleNilaiFields() {
+            const kat = document.getElementById('n-kat').value;
+            ['n-fisik', 'n-teknik', 'n-seni'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById('n-' + kat).classList.remove('hidden');
+            calcAverage();
+        }
+
+        function populateMemberSelects() {
+            document.querySelectorAll('.select-member').forEach(sel => {
+                sel.innerHTML = '<option value="">Pilih Anggota...</option>';
+                ps_data.members.forEach(m => { sel.innerHTML += `<option value="${m.nama}">${m.nama}</option>`; });
             });
         }
 
-        function saveData() {
-            const key = document.getElementById('editKey').value;
-            let entry = {};
-            
-            if(currentMenu === 'ABSENSI') {
-                entry = { name: document.getElementById('inputName').value.toUpperCase(), jk: document.getElementById('a_jk').value, kelas: document.getElementById('a_kelas').value.toUpperCase(), tgl: document.getElementById('a_tgl').value, hadir: document.getElementById('a_hadir').value, materi: document.getElementById('a_materi').value.toUpperCase(), pembina: document.getElementById('a_pembina').value.toUpperCase() };
-            } else if(currentMenu === 'KAS') { 
-                entry = { tgl: document.getElementById('k_tgl').value, tipe: document.getElementById('k_tipe').value, nominal: document.getElementById('k_nominal').value, ket: document.getElementById('k_ket').value.toUpperCase() }; 
-            } else if(currentMenu === 'S_MASUK' || currentMenu === 'S_KELUAR') {
-                entry = { tgl: currentMenu === 'S_MASUK' ? document.getElementById('sm_tgl').value : document.getElementById('sk_tgl').value };
-                if(currentMenu === 'S_MASUK') { entry.perihal = document.getElementById('sm_perihal').value.toUpperCase(); entry.pengirim = document.getElementById('sm_pengirim').value.toUpperCase(); }
-                else { entry.nomor = document.getElementById('sk_nomor').value.toUpperCase(); entry.perihal = document.getElementById('sk_perihal').value.toUpperCase(); entry.penerima = document.getElementById('sk_penerima').value.toUpperCase(); }
-            } else {
-                entry = { name: document.getElementById('inputName').value.toUpperCase() };
-                if(currentMenu === 'ANGGOTA') { entry.usia = document.getElementById('inputUsia').value; entry.jk = document.getElementById('inputJK').value; }
-                if(currentMenu === 'FISIK') { let v = [1,2,3,4,5].map(i => document.getElementById('f_v'+i).value || 0); entry.avg = (v.reduce((a,b)=>parseFloat(a)+parseFloat(b),0)/5).toFixed(1); v.forEach((val, i) => entry['v'+(i+1)] = val); }
-                if(currentMenu === 'SENI') { let v = [1,2].map(i => document.getElementById('s_v'+i).value || 0); entry.avg = (v.reduce((a,b)=>parseFloat(a)+parseFloat(b),0)/2).toFixed(1); v.forEach((val, i) => entry['v'+(i+1)] = val); }
-                if(currentMenu === 'TEKNIK') { let v = [1,2,3,4,5,6,7].map(i => document.getElementById('t_v'+i).value || 0); entry.avg = (v.reduce((a,b)=>parseFloat(a)+parseFloat(b),0)/7).toFixed(1); v.forEach((val, i) => entry['v'+(i+1)] = val); }
+        function syncMemberData(el) {
+            const member = ps_data.members.find(m => m.nama === el.value), form = el.closest('form');
+            if(member) { form.querySelector('[name="kualifikasi"]').value = member.kualifikasi; form.querySelector('[name="tingkatan"]').value = member.tingkatan || 'Dasar'; }
+        }
+
+        function autoAge() {
+            const tgl = new Date(document.getElementById('f-tgl').value), thn = new Date().getFullYear() - tgl.getFullYear();
+            let label = "Dewasa";
+            if(thn <= 11) label = "Usia Dini"; else if(thn <= 14) label = "Pra Remaja"; else if(thn <= 17) label = "Remaja";
+            document.getElementById('f-usia').value = label;
+        }
+
+        function calcSaldo() {
+            const inc = parseFloat(document.getElementById('kas-in').value) || 0, out = parseFloat(document.getElementById('kas-out').value) || 0;
+            document.getElementById('kas-saldo').value = inc - out;
+        }
+
+        function calcAverage() {
+            const kat = document.getElementById('n-kat').value, inputs = document.querySelectorAll(`#n-${kat} .n-input`);
+            let total = 0, count = 0;
+            inputs.forEach(i => { const v = i.value.trim(); if(v !== "" && v !== "-" && !isNaN(v)) { total += parseFloat(v); count++; } });
+            document.getElementById('n-rata-final').value = count > 0 ? (total / count).toFixed(1) : 0;
+        }
+
+        function handleSave(e, type) {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target).entries());
+            data.id = Date.now();
+            ps_data[type].push(data);
+            localStorage.setItem('ps_data_v2', JSON.stringify(ps_data));
+            document.getElementById('success-overlay').style.display = 'flex';
+            setTimeout(() => { document.getElementById('success-overlay').style.display = 'none'; closeModal(e.target.closest('.custom-modal').id); e.target.reset(); }, 1000);
+        }
+
+        function renderDB() {
+            const f = document.getElementById('db-filter').value, search = document.getElementById('db-search').value.toLowerCase(), body = document.getElementById('db-body');
+            body.innerHTML = "";
+            ps_data.members.filter(m => m.kategori === f && m.nama.toLowerCase().includes(search)).forEach(m => {
+                body.innerHTML += `<tr><td>👤</td><td class="font-bold">${m.nama}</td><td>${m.jk}</td><td>${m.kualifikasi}</td><td><i class="fas fa-trash text-red-400" onclick="deleteData('members', ${m.id})"></i></td></tr>`;
+            });
+        }
+
+        function renderAdmTable() {
+            const f = document.getElementById('adm-table-filter').value, head = document.getElementById('adm-thead'), body = document.getElementById('adm-tbody');
+            body.innerHTML = "";
+            if(f === 'absensi') {
+                head.innerHTML = "<tr><th>Tgl</th><th>Nama</th><th>Ket</th><th>Aksi</th></tr>";
+                ps_data.adm.filter(a => a.sub_kat === 'absensi').forEach(a => { body.innerHTML += `<tr><td>${a.tanggal}</td><td>${a.nama}</td><td>${a.ket}</td><td>🗑️</td></tr>`; });
+            } else if(f === 'kas') {
+                head.innerHTML = "<tr><th>Tgl</th><th>Masuk</th><th>Keluar</th><th>Saldo</th><th>Aksi</th></tr>";
+                ps_data.adm.filter(a => a.sub_kat === 'kas').forEach(a => { body.innerHTML += `<tr><td>${a.tanggal}</td><td>${a.masuk}</td><td>${a.keluar}</td><td class="font-bold">${a.saldo}</td><td>🗑️</td></tr>`; });
             }
+        }
 
-            if(key) {
-                database.ref(currentMenu + '/' + key).set(entry);
-            } else {
-                database.ref(currentMenu).push(entry);
+        function renderNilaiTable() {
+            const body = document.getElementById('nilai-list-body'); body.innerHTML = "";
+            const rekap = {};
+            ps_data.nilai.forEach(n => {
+                if(!rekap[n.nama_target]) rekap[n.nama_target] = { fisik:0, teknik:0, seni:0, f_in:0, t_in:0, s_in:0, kual:n.kualifikasi, sabuk:n.tingkatan };
+                rekap[n.nama_target][n.kategori] = parseFloat(n.total_rata);
+                rekap[n.nama_target][n.kategori.charAt(0) + '_in'] = 1;
+            });
+            Object.keys(rekap).forEach(nama => {
+                const d = rekap[nama], count = d.f_in + d.t_in + d.s_in;
+                const r = ((d.fisik + d.teknik + d.seni) / (count || 1)).toFixed(1);
+                body.innerHTML += `<tr><td>${nama}</td><td>${d.kual}</td><td>${d.sabuk}</td><td>${d.fisik || '-'}</td><td>${d.teknik || '-'}</td><td>${d.seni || '-'}</td><td class="font-black text-emerald-700">${r}</td><td>🗑️</td></tr>`;
+            });
+        }
+
+        function renderMateri() {
+            const body = document.getElementById('materi-list-body'); body.innerHTML = "";
+            ps_data.materi.forEach(m => { body.innerHTML += `<tr><td>${m.tanggal}</td><td class="font-bold">${m.jenis}</td><td>${m.pemateri}</td><td>🗑️</td></tr>`; });
+        }
+
+        function updateChart() {
+            const type = document.getElementById('stat-filter').value;
+            let labels = [], data = [], palette = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
+            if(type === 'kas') {
+                let m = 0, k = 0; ps_data.adm.filter(a => a.sub_kat === 'kas').forEach(a => { m += parseFloat(a.masuk||0); k += parseFloat(a.keluar||0); });
+                labels = ['Masuk', 'Keluar', 'Saldo']; data = [m, k, m-k];
+            } else if(type === 'anggota') {
+                const l = ps_data.members.filter(m => m.jk === 'L').length, p = ps_data.members.filter(m => m.jk === 'P').length;
+                labels = ['Putra', 'Putri']; data = [l, p];
             }
-            closeModal();
+            if(statChart) statChart.destroy();
+            statChart = new Chart(document.getElementById('statChart'), {
+                type: 'bar', data: { labels, datasets: [{ data, backgroundColor: palette, borderRadius: 10 }] },
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false } } } }
+            });
         }
 
-        function editData(key) {
-            let item = db[currentMenu][key]; document.getElementById('editKey').value = key; openModal();
-            if(item.name) document.getElementById('inputName').value = item.name;
-            if(currentMenu === 'ABSENSI') { document.getElementById('a_jk').value = item.jk; document.getElementById('a_kelas').value = item.kelas; document.getElementById('a_tgl').value = item.tgl; document.getElementById('a_hadir').value = item.hadir; document.getElementById('a_materi').value = item.materi; document.getElementById('a_pembina').value = item.pembina; }
-            if(currentMenu === 'ANGGOTA') { document.getElementById('inputJK').value = item.jk; document.getElementById('inputUsia').value = item.usia; }
-            if(currentMenu === 'FISIK') [1,2,3,4,5].forEach(i => document.getElementById('f_v'+i).value = item['v'+i]);
-            if(currentMenu === 'SENI') [1,2].forEach(i => document.getElementById('s_v'+i).value = item['v'+i]);
-            if(currentMenu === 'TEKNIK') [1,2,3,4,5,6,7].forEach(i => document.getElementById('t_v'+i).value = item['v'+i]);
-            if(currentMenu === 'KAS') { document.getElementById('k_tgl').value = item.tgl; document.getElementById('k_tipe').value = item.tipe; document.getElementById('k_nominal').value = item.nominal; document.getElementById('k_ket').value = item.ket; }
-        }
-
-        function openModal() {
-            ['baseIdentity','fieldsANGGOTA','fieldsFISIK','fieldsSENI','fieldsTEKNIK','fieldsKAS','fieldsS_MASUK','fieldsS_KELUAR','fieldsABSENSI'].forEach(f => document.getElementById(f).classList.add('hidden'));
-            if(['KAS','S_MASUK','S_KELUAR'].includes(currentMenu)) document.getElementById('fields'+currentMenu).classList.remove('hidden');
-            else { document.getElementById('baseIdentity').classList.remove('hidden'); document.getElementById('fields'+currentMenu).classList.remove('hidden'); }
-            document.getElementById('modalOverlay').classList.remove('hidden'); setTimeout(() => document.getElementById('inputModal').classList.remove('translate-y-full'), 10);
-        }
-
-        function closeModal() { document.getElementById('inputModal').classList.add('translate-y-full'); setTimeout(() => { document.getElementById('modalOverlay').classList.add('hidden'); document.getElementById('dynamicForm').reset(); document.getElementById('editKey').value = ""; }, 300); }
-
-        function hitungUsia() { 
-            const tglVal = document.getElementById('inputTglLahir').value; if(!tglVal) return;
-            const tgl = new Date(tglVal); const usia = new Date().getFullYear() - tgl.getFullYear();
-            let kual = "DEWASA"; if (usia <= 11) kual = "USIA DINI"; else if (usia <= 14) kual = "PRA REMAJA"; else if (usia <= 17) kual = "REMAJA";
-            document.getElementById('inputUsia').value = kual; 
-        }
-
-        function updateDashboard() { 
-            document.getElementById('dashTotalAnggota').innerText = Object.keys(db.ANGGOTA).length; 
-            document.getElementById('dashTotalSurat').innerText = Object.keys(db.S_MASUK).length + Object.keys(db.S_KELUAR).length;
-            let saldo = Object.values(db.KAS).reduce((acc, curr) => curr.tipe === 'MASUK' ? acc + parseInt(curr.nominal||0) : acc - parseInt(curr.nominal||0), 0);
-            document.getElementById('dashTotalKas').innerText = formatRibuan(saldo);
-        }
-
-        function deleteData(key) { if(confirm("HAPUS DATA?")) { database.ref(currentMenu + '/' + key).remove(); } }
-        function searchTable() { const q = document.getElementById('searchInput').value.toUpperCase(); document.querySelectorAll('#mainTableBody tr').forEach(row => row.style.display = row.innerText.includes(q) ? "" : "none"); }
-        function exportToExcel() { const dataArr = Object.values(db[currentMenu]); const ws = XLSX.utils.json_to_sheet(dataArr); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, currentMenu); XLSX.writeFile(wb, `DATA_${currentMenu}.xlsx`); }
-        function exportToPDF() { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.autoTable({ html: '#targetTable' }); doc.save(`DATA_${currentMenu}.pdf`); }
-        function exportToWord() { let html = document.getElementById('targetTable').outerHTML; let blob = new Blob(['\ufeff', html], { type: 'application/msword' }); let url = URL.createObjectURL(blob); let link = document.createElement('a'); link.href = url; link.download = `DATA_${currentMenu}.doc`; link.click(); }
+        function deleteData(type, id) { if(confirm('Hapus data?')) { ps_data[type] = ps_data[type].filter(x => x.id !== id); localStorage.setItem('ps_data_v2', JSON.stringify(ps_data)); renderDB(); } }
     </script>
 </body>
 </html>
